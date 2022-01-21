@@ -1,8 +1,42 @@
 version: '3.4'
 
 services:
-  bigbase:
-    image: bigbase
-    build:
-      context: .
-      dockerfile: ./Dockerfile
+  bigbase-web:
+    image: bigbase/bigbase-homepage:latest
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          # Runner placement either by role or hostname
+          - node.role == manager
+      restart_policy:
+        condition: any
+      update_config:
+        parallelism: 1
+        delay: 10s 
+      labels:
+        # traefik.enable=true and constraint label are needed because
+        # of the restrictions we enforced in our traefik configuration
+        - traefik.enable=true
+        - traefik.constraint-label=cloud-public
+
+        - traefik.http.routers.bigbase-web.entrypoints=websecure
+        - traefik.http.routers.bigbase-web.rule=Host(`www.bigbase.kr`) || Host(`bigbase.kr`) 
+        - traefik.http.routers.bigbase-web.tls=true
+        # min TLS version
+        - traefik.http.routers.bigbase-web.tls.options=tls12@file
+        - traefik.http.routers.bigbase-web.tls.certresolver=letsencrypt
+        - traefik.http.routers.bigbase-web.service=whoamisrv2
+        - traefik.http.routers.bigbase-web.middlewares=traefik-ratelimit
+        - traefik.http.middlewares.traefik-ratelimit.ratelimit.average=100
+        - traefik.http.middlewares.traefik-ratelimit.ratelimit.burst=50
+        - traefik.http.services.bigbase-web.loadbalancer.server.port=8083
+    networks:
+      - cloud-public
+
+networks:
+  # Use the previously created public network "traefik-public", shared with other
+  # services that need to be publicly available via this Traefik
+  cloud-public:
+    external: true

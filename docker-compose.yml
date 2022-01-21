@@ -2,9 +2,7 @@ version: '3.4'
 
 services:
   bigbase-web:
-    image: bigbase/bigbase-homepage:latest
-    ports:
-      - 8083:80
+    image: bigbase/bigbase-homepage:latest    
     deploy:
       mode: replicated
       replicas: 1
@@ -29,11 +27,11 @@ services:
         # min TLS version
         - traefik.http.routers.bigbase-web.tls.options=tls12@file
         - traefik.http.routers.bigbase-web.tls.certresolver=letsencrypt
-        - traefik.http.routers.bigbase-web.service=whoamisrv2
+        - traefik.http.routers.bigbase-web.service=bigbase-web
         - traefik.http.routers.bigbase-web.middlewares=traefik-ratelimit
         - traefik.http.middlewares.traefik-ratelimit.ratelimit.average=100
         - traefik.http.middlewares.traefik-ratelimit.ratelimit.burst=50
-        - traefik.http.services.bigbase-web.loadbalancer.server.port=8083
+        - traefik.http.services.bigbase-web.loadbalancer.server.port=80
     networks:
       - cloud-public
 
